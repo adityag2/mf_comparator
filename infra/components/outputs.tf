@@ -20,5 +20,5 @@ output "api_gateway_id" {
 
 output "custom_domain" {
   description = "Custom domain name (if configured)"
-  value       = var.domain_name != "" ? aws_api_gateway_domain_name.custom[0].domain_name : "Not configured"
+  value       = aws_api_gateway_domain_name.custom.domain_name
 }

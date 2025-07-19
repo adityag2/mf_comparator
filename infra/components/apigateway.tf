@@ -2,6 +2,9 @@
 resource "aws_api_gateway_rest_api" "mf_comparator" {
   name        = "mf-comparator-api-${var.environment}"
   description = "API Gateway for MF Comparator Lambda"
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
 }
 
 # API Gateway Resource for proxy
@@ -66,16 +69,21 @@ resource "aws_api_gateway_deployment" "deployment" {
   ]
   
   rest_api_id = aws_api_gateway_rest_api.mf_comparator.id
-  stage_name  = var.environment
+  # stage_name  = var.environment
   
   lifecycle {
     create_before_destroy = true
   }
 }
 
+   resource "aws_api_gateway_stage" "main" {
+     rest_api_id   = aws_api_gateway_rest_api.mf_comparator.id
+     deployment_id = aws_api_gateway_deployment.deployment.id
+     stage_name    = var.environment
+   }
+
 # Custom Domain (optional)
 resource "aws_api_gateway_domain_name" "custom" {
-  count           = var.domain_name != "" ? 1 : 0
   domain_name     = var.domain_name
   certificate_arn = data.aws_acm_certificate.wildcard.arn
   
@@ -86,22 +94,20 @@ resource "aws_api_gateway_domain_name" "custom" {
 
 # API Gateway Base Path Mapping (optional)
 resource "aws_api_gateway_base_path_mapping" "custom" {
-  count       = var.domain_name != "" ? 1 : 0
   api_id      = aws_api_gateway_rest_api.mf_comparator.id
-  stage_name  = aws_api_gateway_deployment.deployment.stage_name
-  domain_name = aws_api_gateway_domain_name.custom[0].domain_name
+  stage_name  = aws_api_gateway_stage.main.stage_name
+  domain_name = aws_api_gateway_domain_name.custom.domain_name
 }
 
 # Route53 Record (optional)
 resource "aws_route53_record" "apigw_subdomain" {
-  count   = var.domain_name != "" ? 1 : 0
   zone_id = data.aws_route53_zone.root.zone_id
   name    = var.domain_name
   type    = "A"
   
   alias {
-    name                   = aws_api_gateway_domain_name.custom[0].regional_domain_name
-    zone_id                = aws_api_gateway_domain_name.custom[0].regional_zone_id
+    name                   = aws_api_gateway_domain_name.custom.regional_domain_name
+    zone_id                = aws_api_gateway_domain_name.custom.regional_zone_id
     evaluate_target_health = false
   }
 } 

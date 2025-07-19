@@ -1,13 +1,13 @@
 provider "aws" {
-  region = "us-east-1"
+  region = "eu-west-1"
 }
 
 terraform {
   required_version = ">= 1.11.0"
   backend "s3" {
-    bucket         = "tf-state-parseit-org"         # <-- Change this to your S3 bucket name
+    bucket         = "tf-state-parseit"         # <-- Change this to your S3 bucket name
     key            = "mf-comparator/terraform.tfstate"
-    region         = "us-east-1"                    # <-- Change if using a different region
+    region         = "eu-west-1"                    # <-- Change if using a different region
     encrypt        = true
     use_lockfile   = true
   }

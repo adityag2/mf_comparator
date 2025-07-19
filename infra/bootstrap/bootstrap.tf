@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "tf_state" {
-  bucket = "tf-state-parseit-org"
+  bucket = "tf-state-parseit"
 
   tags = {
     Name        = "Terraform State Bucket"
