@@ -1,5 +1,8 @@
 // Real Mutual Fund API Integration
-const API_BASE_URL = window.location.origin + '/api';
+const API_BASE_URL =
+  process.env.NODE_ENV === "development"
+    ? "" // so fetch('/mf') goes to the proxy
+    : window.location.origin + "/api";
 
 class MutualFundAPI {
   constructor() {
