@@ -36,11 +36,14 @@
     "dev": "react-scripts start",
     "preview": "serve -s build",
     "serve": "node server.js",
+    "zip:lambda": "pnpm run build && pnpm run zip:raw",
+    "zip:raw": "powershell Compress-Archive -Path build,lambda.js -DestinationPath build/lambda.zip -Force",
     "deploy:terraform": "cd infra && terraform apply",
-    "deploy:build": "pnpm run build && cd infra && terraform apply",
+    "deploy:build": "pnpm run zip:lambda && cd infra && terraform apply",
     "terraform:init": "cd infra && terraform init",
     "terraform:plan": "cd infra && terraform plan",
-    "terraform:destroy": "cd infra && terraform destroy"
+    "terraform:destroy": "cd infra && terraform destroy",
+    "check:zip": "which zip || echo 'Please install zip utility (e.g., sudo apt install zip or choco install zip)'"
   },
   "eslintConfig": {
     "extends": [
