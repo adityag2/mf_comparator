@@ -1,23 +1,29 @@
-variable "tf_state_bucket" {
-  description = "Name for the S3 bucket to store Terraform state"
-  type        = string
-  default     = "tf-state-bucket"
-}
-
-variable "root_domain" {
-  description = "Root domain for Route53 (e.g., yourdomain.com)"
-  type        = string
-  default     = "parseit.org"
-}
-
-variable "domain_name" {
-  description = "Custom domain for API Gateway (e.g., api.yourdomain.com)"
-  type        = string
-  default     = "mf.parseit.org"
-}
-
 variable "environment" {
   description = "Deployment environment"
   type        = string
   default     = "dev"
+}
+
+variable "s3_bucket_name" {
+  description = "Name for the S3 bucket to host the frontend static site"
+  type        = string
+  default     = "mf-comparator-frontend-bucket"
+}
+
+variable "domain_name" {
+  description = "Custom domain for the frontend (e.g., mf.parseit.org)"
+  type        = string
+  default     = "mf.parseit.org"
+}
+
+variable "acm_certificate_domain" {
+  description = "Domain name for the ACM certificate (e.g., *.parseir.org)"
+  type        = string
+  default     = "*.parseit.org"
+}
+
+variable "cloudfront_aliases" {
+  description = "List of domain aliases for the CloudFront distribution (e.g., [\"mf.parseit.org\"])"
+  type        = list(string)
+  default     = ["mf.parseit.org"]
 } 

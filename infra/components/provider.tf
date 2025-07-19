@@ -2,6 +2,11 @@ provider "aws" {
   region = "eu-west-1"
 }
 
+provider "aws" {
+  region = "us-east-1"
+  alias = "us_east_1"
+}
+
 terraform {
   required_version = ">= 1.11.0"
   backend "s3" {
