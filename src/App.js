@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Search, TrendingUp, Calculator, Zap, Award, AlertCircle, CheckCircle, Download, FileText, Share2, RefreshCw, Database, Plus, Minus, Eye } from 'lucide-react';
+import { Search, TrendingUp, Calculator, Zap, Award, AlertCircle, CheckCircle, Download, FileText, Share2, RefreshCw, Database, Plus, Minus, Eye, Wifi, WifiOff } from 'lucide-react';
+import mfApi from './api/mfApi';
+import { transformFundData, groupFundsByHouse, calculateFundMetrics } from './utils/dataTransformer';
 
 // Mock fund data with realistic values
 const FUND_DATA = {
@@ -438,18 +440,18 @@ const ExportPanel = ({ results, selectedFund, projectionData, sipAmount, years }
   );
 };
 
-const FundSelector = ({ fundHouses, selectedFundHouse, selectedFund, onFundHouseChange, onFundChange, isLoading, onRefreshData }) => {
+const FundSelector = ({ fundHouses, selectedFundHouse, selectedFund, onFundHouseChange, onFundChange, isLoading, onRefreshData, fundData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   
   const filteredFunds = useMemo(() => {
     if (!selectedFundHouse) return [];
-    const funds = FUND_DATA[selectedFundHouse] || [];
+    const funds = fundData[selectedFundHouse] || [];
     if (!debouncedSearch) return funds;
     return funds.filter(fund => 
       fund.name.toLowerCase().includes(debouncedSearch.toLowerCase())
     );
-  }, [selectedFundHouse, debouncedSearch]);
+  }, [selectedFundHouse, debouncedSearch, fundData]);
 
   return (
     <div className="space-y-4">
@@ -773,28 +775,38 @@ const App = () => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [selectedFundsForComparison, setSelectedFundsForComparison] = useState([]);
   const [showComparison, setShowComparison] = useState(false);
-  
-  const fundHouses = Object.keys(FUND_DATA);
+  const [apiStatus, setApiStatus] = useState('online');
+  const [fundData, setFundData] = useState({});
+  const [fundHouses, setFundHouses] = useState([]);
 
   // Get all funds for comparison table
   const allFunds = useMemo(() => {
     if (!selectedFundHouse) return [];
-    return FUND_DATA[selectedFundHouse] || [];
-  }, [selectedFundHouse]);
+    return fundData[selectedFundHouse] || [];
+  }, [selectedFundHouse, fundData]);
 
-  // API Integration for refreshing data
+  // Real API Integration for refreshing data
   const refreshFundData = useCallback(async () => {
     setIsLoading(true);
+    setApiStatus('loading');
+    
     try {
-      // Simulate API call
-      const response = await ApiService.fetchFundList();
-      setLastUpdated(new Date(response.lastUpdated));
+      // Fetch real fund data
+      const apiFunds = await mfApi.getAllFunds();
+      const transformedFunds = transformFundData(apiFunds);
+      const groupedFunds = groupFundsByHouse(transformedFunds);
       
-      // In a real app, you would update FUND_DATA here
-      // For demo, we just simulate the loading
+      setFundData(groupedFunds);
+      setFundHouses(Object.keys(groupedFunds).sort());
+      setLastUpdated(new Date());
+      setApiStatus('online');
       
     } catch (error) {
       console.error('Failed to fetch fund data:', error);
+      setApiStatus('offline');
+      // Fallback to mock data
+      setFundData(FUND_DATA);
+      setFundHouses(Object.keys(FUND_DATA));
     } finally {
       setIsLoading(false);
     }
@@ -882,12 +894,27 @@ const App = () => {
             Compare Direct vs Regular plans and maximize your investment returns
           </p>
           
-          {lastUpdated && (
-            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm">
-              <CheckCircle className="w-4 h-4" />
-              Data updated: {lastUpdated.toLocaleDateString()} {lastUpdated.toLocaleTimeString()}
+          <div className="flex items-center justify-center gap-4 mb-4">
+            {lastUpdated && (
+              <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm">
+                <CheckCircle className="w-4 h-4" />
+                Data updated: {lastUpdated.toLocaleDateString()} {lastUpdated.toLocaleTimeString()}
+              </div>
+            )}
+            
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm ${
+              apiStatus === 'online' ? 'bg-green-100 text-green-800' :
+              apiStatus === 'loading' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {apiStatus === 'online' ? <Wifi className="w-4 h-4" /> :
+               apiStatus === 'loading' ? <RefreshCw className="w-4 h-4 animate-spin" /> :
+               <WifiOff className="w-4 h-4" />}
+              {apiStatus === 'online' ? 'Live Data' :
+               apiStatus === 'loading' ? 'Loading...' :
+               'Offline Mode'}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Comparison Toggle */}
@@ -934,6 +961,7 @@ const App = () => {
                 onFundChange={handleFundChange}
                 isLoading={isLoading}
                 onRefreshData={refreshFundData}
+                fundData={fundData}
               />
 
               {selectedFund && (
